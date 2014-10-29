@@ -1,0 +1,7 @@
+config.json
+.DS_Store
+*.log
+node_modules
+*.jmx
+.idea
+aws.json
