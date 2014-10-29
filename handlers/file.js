@@ -13,8 +13,7 @@ var uuid = require('uuid');
 
 var maxFileSize = require('../config').limits.fileSize;
 
-
-AWS.config.loadFromPath('./aws.json');
+AWS.config.loadFromPath(__dirname+'/aws.json');
 
 var s3 = new AWS.S3();
 
