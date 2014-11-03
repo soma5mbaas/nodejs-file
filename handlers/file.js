@@ -34,7 +34,8 @@ exports.uploadS3 = function(header, files, callback) {
 
         if( file.mimetype === 'image/png' ) {
             file.buffer = pngquant.compress(file.buffer, {
-                "speed": 1 //1 ~ 11
+                "speed": 10,
+                "quality": [40, 60]
             });
         }
 
