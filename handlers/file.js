@@ -13,6 +13,9 @@ var uuid = require('uuid');
 
 var maxFileSize = require('../config').limits.fileSize;
 
+var pngquant = require('node-pngquant-native');
+
+
 AWS.config.loadFromPath(__dirname+'/aws.json');
 
 var s3 = new AWS.S3();
@@ -29,6 +32,13 @@ exports.uploadS3 = function(header, files, callback) {
             return next(null, {});
         }
 
+        if( file.mimetype === 'image/png' ) {
+            file.buffer = pngquant.compress(file.buffer, {
+                "speed": 1 //1 ~ 11
+            });
+        }
+
+
         var _id = uuid();
         var params = {Bucket: 'harubaas', Key: applicationId+'/'+_id+'_'+file.originalname , Body: file.buffer};
 
@@ -44,10 +54,10 @@ exports.uploadS3 = function(header, files, callback) {
 
         async.series([
             function putS3(callback) {
-                s3.putObject(params, callback);
+                //s3.putObject(params, callback);
             },
             function saveMetaData(callback) {
-                _saveMetaData(applicationId, data, callback);
+                //_saveMetaData(applicationId, data, callback);
             }
         ], function done(error, results) {
             next(error, data);
@@ -56,6 +66,8 @@ exports.uploadS3 = function(header, files, callback) {
         callback(error, results);
     });
 };
+
+
 
 
 function _saveMetaData(applicationId, data, callback) {
