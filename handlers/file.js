@@ -54,10 +54,10 @@ exports.uploadS3 = function(header, files, callback) {
 
         async.series([
             function putS3(callback) {
-                //s3.putObject(params, callback);
+                s3.putObject(params, callback);
             },
             function saveMetaData(callback) {
-                //_saveMetaData(applicationId, data, callback);
+                _saveMetaData(applicationId, data, callback);
             }
         ], function done(error, results) {
             next(error, data);
