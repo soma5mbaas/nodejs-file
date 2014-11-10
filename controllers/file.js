@@ -10,7 +10,7 @@ var cloudfront = require('../config').cloudfront;
 exports.upload = function(req, res) {
     var header = getHeader(req);
 
-    console.log('get : ' + req.files);
+    console.log(req.files);
     fileHandler.uploadS3(header, req.files, function(error, results) {
         console.log(error, results);
 
