@@ -27,7 +27,7 @@ app.use(multer({
     includeEmptyFields: true
 }));
 
-app.use('/', routes);
+app.use('/1', routes);
 
 
 
