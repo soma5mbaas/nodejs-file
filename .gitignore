@@ -5,3 +5,4 @@ node_modules
 *.jmx
 .idea
 aws.json
+logConfig.json
