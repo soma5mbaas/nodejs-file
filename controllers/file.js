@@ -3,9 +3,6 @@ var fileHandler = require('../handlers/file');
 var getHeader = require('haru-nodejs-util').common.getHeader;
 var sendError = require('haru-nodejs-util').common.sendError;
 
-var escape = require("querystring").escape;
-
-var cloudfront = require('../config').cloudfront;
 
 exports.upload = function(req, res) {
     var header = getHeader(req);
@@ -24,7 +21,12 @@ exports.upload = function(req, res) {
                     updatedAt: results[i].updatedAt,
                     createdAt: results[i].createdAt,
                     originalName: results[i].originalName,
-                    url: cloudfront + escape(header.applicationId + '/' + results[i]._id + '_' + results[i].originalName)
+
+                    url: results[i].url,
+                    size: results[i].size,
+
+                    originalUrl: results[i].originalUrl,
+                    originalSize: results[i].originalSize
                 });
             }
         }
@@ -32,3 +34,4 @@ exports.upload = function(req, res) {
         res.json({results: output});
     });
 };
+

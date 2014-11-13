@@ -14,7 +14,8 @@ var uuid = require('uuid');
 var maxFileSize = require('../config').limits.fileSize;
 
 var pngquant = require('node-pngquant-native');
-
+var cloudfront = require('../config').cloudfront;
+var escape = require("querystring").escape;
 
 AWS.config.loadFromPath(__dirname+'/aws.json');
 
@@ -24,6 +25,7 @@ exports.uploadS3 = function(header, files, callback) {
     if( !_.isObject(files) ) { return callback(new Error('file'), null); }
     var fields = Object.keys(files);
     var applicationId = header.applicationId;
+    var timestamp = header.timestamp;
 
     async.times(fields.length, function(n, next) {
         var file = files[fields[n]];
@@ -33,42 +35,95 @@ exports.uploadS3 = function(header, files, callback) {
         }
 
         if( file.mimetype === 'image/png' ) {
-            file.buffer = pngquant.compress(file.buffer, {
-                "speed": 10,
-                "quality": [40, 60]
-            });
+            _uploadPng(applicationId, timestamp, file, next);
+        } else {
+            _uploadFile(applicationId, timestamp, file, next);
         }
 
 
-        var _id = uuid();
-        var params = {Bucket: 'harubaas', Key: applicationId+'/'+_id+'_'+file.originalname , Body: file.buffer};
-
-        var data = {
-            _id: _id,
-            createdAt: header.timestamp,
-            updatedAt: header.timestamp,
-
-            size: file.size,
-            originalName: file.originalname,
-            extension: file.extension
-        };
-
-        async.series([
-            function putS3(callback) {
-                s3.putObject(params, callback);
-            },
-            function saveMetaData(callback) {
-                _saveMetaData(applicationId, data, callback);
-            }
-        ], function done(error, results) {
-            next(error, data);
-        });
     },function done(error, results) {
         callback(error, results);
     });
 };
 
+function _uploadPng(applicationId, timestamp, file, next) {
+    file.compressBuffer = pngquant.compress(file.buffer, {
+        "speed": 10,
+        "quality": [40, 60]
+    });
 
+    var _id = uuid();
+
+    var originName = file.originalname;
+    var compressName = 'compress:'+file.originalname;
+
+    var originParams = {Bucket: 'harubaas', Key: applicationId+'/'+_id+'_'+originName , Body: file.buffer};
+    var compressParams = {Bucket: 'harubaas', Key: applicationId+'/'+_id+'_'+compressName , Body: file.compressBuffer};
+
+
+    var data = {
+        _id: _id,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+
+        size: file.compressBuffer.length,
+        originalSize: file.buffer.length,
+
+        url: _createUrl(applicationId, _id, compressName),
+        originalUrl: _createUrl(applicationId, _id, originName),
+
+        originalName: file.originalname,
+        extension: file.extension
+    };
+
+    async.series([
+        function putS3Origin(callback) {
+            s3.putObject(originParams, callback);
+        },
+        function putS3Compress( callback ) {
+            s3.putObject(compressParams, callback);
+        },
+        function saveMetaData(callback) {
+            _saveMetaData(applicationId, data, callback);
+        }
+    ], function done(error, results) {
+        next(error, data);
+    });
+};
+
+function _uploadFile(applicationId, timestamp, file, next) {
+    var _id = uuid();
+    var originName = file.originalname;
+
+    var params = {Bucket: 'harubaas', Key: applicationId+'/'+_id+'_'+originName , Body: file.buffer};
+
+    var data = {
+        _id: _id,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+
+        url: _createUrl(applicationId, _id, originName),
+
+        size: file.size,
+        originalName: file.originalname,
+        extension: file.extension
+    };
+
+    async.series([
+        function putS3(callback) {
+            s3.putObject(params, callback);
+        },
+        function saveMetaData(callback) {
+            _saveMetaData(applicationId, data, callback);
+        }
+    ], function done(error, results) {
+        next(error, data);
+    });
+};
+
+function _createUrl(applicationId, _id, fileName) {
+    return cloudfront + escape(applicationId + '/' + _id + '_' + fileName);
+}
 
 
 function _saveMetaData(applicationId, data, callback) {
