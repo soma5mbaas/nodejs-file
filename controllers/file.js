@@ -41,11 +41,9 @@ exports.info = function(req, res) {
     fileHandler.getMetaData(header, function(error, results) {
         // TODO error Code
         if( error ) { return sendError(res, error, log, 'error'); }
-        if( _.isEmpty(results) ) { return sendError(res, new Error('INVALID_APPLICATION_ID'), log, 'error'); }
 
         res.json({
-            totalSize: results.totalSize-0,
-            count: results.count-0
+            totalSize: results.size-0
         });
     });
 };

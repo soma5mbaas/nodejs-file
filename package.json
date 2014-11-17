@@ -15,7 +15,7 @@
     "debug": "~0.7.4",
     "express": "~4.2.0",
     "haru-nodejs-analysis": "^1.0.0",
-    "haru-nodejs-store": "0.0.31",
+    "haru-nodejs-store": "0.0.35",
     "haru-nodejs-util": "0.0.42",
     "jade": "~1.3.0",
     "morgan": "~1.0.0",

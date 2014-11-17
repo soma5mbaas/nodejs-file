@@ -47,8 +47,22 @@ exports.uploadS3 = function(header, files, callback) {
 };
 
 exports.getMetaData = function(header, callback) {
-    var metaKey = keys.fileMetadataKey(header.applicationId);
-    store.get('public').hgetall(metaKey, callback);
+    store.get('mongodb').aggreate(keys.collectionKey(FileClassName, header.applicationId),[{
+        $group: {
+            _id: null,
+            size: {$sum: {
+                $add: ['$size', {$ifNull: ['$originalSize', 0] }]
+            }
+            }
+        }
+    }], function(error, results) {
+        if( results.length < 1 ) {
+            results.push({size: 0});
+        }
+
+        callback(error, results[0]);
+    });
+
 };
 
 function _uploadPng(applicationId, timestamp, file, next) {
