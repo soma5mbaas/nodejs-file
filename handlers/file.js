@@ -46,6 +46,11 @@ exports.uploadS3 = function(header, files, callback) {
     });
 };
 
+exports.getMetaData = function(header, callback) {
+    var metaKey = keys.fileMetadataKey(header.applicationId);
+    store.get('public').hgetall(metaKey, callback);
+};
+
 function _uploadPng(applicationId, timestamp, file, next) {
     file.compressBuffer = pngquant.compress(file.buffer, {
         "speed": 10,
@@ -152,6 +157,24 @@ function _saveMetaData(applicationId, data, callback) {
                 .hmset(keys.entityDetail(FileClassName, data._id, applicationId), data)
                 .zadd(keys.entityKey(FileClassName, applicationId), data.updatedAt, data._id)
                 .exec(callback);
+        },
+        function saveMetaData(callback) {
+            var metaKey = keys.fileMetadataKey(applicationId);
+
+            var size = data.size;
+            var count = 1;
+
+            if( data.originalSize ) {
+                size += data.originalSize;
+                count += 1
+            }
+
+            store.get('public').multi()
+                .hincrby(metaKey, 'totalSize', size)
+                .hincrby(metaKey, 'count', count)
+                .exec(function(error, results) {
+                    callback(error, {totalSize: results[0], count: results[1]});
+                });
         }
     ], function done(error, results) {
         callback(error, results);
@@ -164,3 +187,6 @@ function _saveSchema(applicationId, data) {
 
     store.get('service').hmset(schemaKey, schema);
 }
+
+
+

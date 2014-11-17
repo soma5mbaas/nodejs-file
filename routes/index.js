@@ -11,5 +11,6 @@ router.get('/', function(req, res) {
 
 
 router.post('/files', file.upload);
+router.get('/files', file.info);
 
 module.exports = router;

@@ -2,6 +2,7 @@
 var fileHandler = require('../handlers/file');
 var getHeader = require('haru-nodejs-util').common.getHeader;
 var sendError = require('haru-nodejs-util').common.sendError;
+var _ = require('underscore');
 
 
 exports.upload = function(req, res) {
@@ -10,8 +11,6 @@ exports.upload = function(req, res) {
     fileHandler.uploadS3(header, req.files, function(error, results) {
         if(error) { return sendError(res, error); }
         if(!results) { return sendError(res, new Error('')); }
-        
-        
 
         var output = [];
         for( var i = 0; i < results.length; i++ ) {
@@ -35,3 +34,18 @@ exports.upload = function(req, res) {
     });
 };
 
+
+exports.info = function(req, res) {
+    var header = getHeader(req);
+
+    fileHandler.getMetaData(header, function(error, results) {
+        // TODO error Code
+        if( error ) { return sendError(res, error, log, 'error'); }
+        if( _.isEmpty(results) ) { return sendError(res, new Error('INVALID_APPLICATION_ID'), log, 'error'); }
+
+        res.json({
+            totalSize: results.totalSize-0,
+            count: results.count-0
+        });
+    });
+};
