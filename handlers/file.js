@@ -17,6 +17,10 @@ var pngquant = require('node-pngquant-native');
 var cloudfront = require('../config').cloudfront;
 var escape = require("querystring").escape;
 
+var getShardKey = require('haru-nodejs-util').common.getShardKey;
+var createEntityId = require('haru-nodejs-util').common.createEntityId;
+
+
 AWS.config.loadFromPath(__dirname+'/aws.json');
 
 var s3 = new AWS.S3();
@@ -163,14 +167,17 @@ function _saveMetaData(applicationId, data, callback) {
                 callback(error, results);
             });
         },
+        function createId(callback) {
+            createEntityId({ timestamp: data.updatedAt, public: store.get('public') }, function(error, id, shardKey) {
+                data._id = id;
+                callback(error);
+            });
+        },
         function createMongoDB(callback){
             store.get('mongodb').insert(keys.collectionKey(FileClassName, applicationId), data, callback);
         },
         function createRedis(callback){
-            store.get('service').multi()
-                .hmset(keys.entityDetail(FileClassName, data._id, applicationId), data)
-                .zadd(keys.entityKey(FileClassName, applicationId), data.updatedAt, data._id)
-                .exec(callback);
+            store.get('service').hmset(keys.entityDetail(FileClassName, data._id, applicationId), data, callback, getShardKey(data._id));
         },
         function saveMetaData(callback) {
             var metaKey = keys.fileMetadataKey(applicationId);
@@ -184,6 +191,7 @@ function _saveMetaData(applicationId, data, callback) {
             }
 
             store.get('public').multi()
+                .zadd(keys.entityKey(FileClassName, applicationId), data.updatedAt, data._id)
                 .hincrby(metaKey, 'totalSize', size)
                 .hincrby(metaKey, 'count', count)
                 .exec(function(error, results) {
